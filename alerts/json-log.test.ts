@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest'
 import { mkdtempSync, readFileSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { JsonLogBackend } from './json-log'
+import { JsonLogBackend, anonymizeIp } from './json-log'
 import type { Alert } from '../events'
 
 const tmpDirs: string[] = []
@@ -39,5 +39,42 @@ describe('JsonLogBackend', () => {
     let contents = ''
     try { contents = readFileSync(logFile, 'utf8') } catch {}
     expect(contents).toBe('')
+  })
+
+  it('anonymizes IPv4 addresses in payload when anonymize=true', async () => {
+    const b = new JsonLogBackend({ enabled: true, min_level: 'low' }, logFile, true)
+    await b.send({
+      ...alert(),
+      evidence: [{ timestamp: 1, signal: 'ip_change', severity: 'medium', payload: { new_ip: '103.22.200.55' } }],
+    })
+    const line = readFileSync(logFile, 'utf8').trim()
+    const parsed = JSON.parse(line)
+    expect(parsed.evidence[0].payload.new_ip).toBe('103.22.200.0')
+  })
+
+  it('leaves IPs intact when anonymize=false (default)', async () => {
+    const b = new JsonLogBackend({ enabled: true, min_level: 'low' }, logFile)
+    await b.send({
+      ...alert(),
+      evidence: [{ timestamp: 1, signal: 'ip_change', severity: 'medium', payload: { new_ip: '103.22.200.55' } }],
+    })
+    const parsed = JSON.parse(readFileSync(logFile, 'utf8').trim())
+    expect(parsed.evidence[0].payload.new_ip).toBe('103.22.200.55')
+  })
+})
+
+describe('anonymizeIp', () => {
+  it('zeroes the last IPv4 octet', () => {
+    expect(anonymizeIp('1.2.3.4')).toBe('1.2.3.0')
+    expect(anonymizeIp('203.0.113.55')).toBe('203.0.113.0')
+  })
+
+  it('keeps first 3 IPv6 groups and zeroes the rest', () => {
+    expect(anonymizeIp('2400:cb00:1234:5678::5')).toBe('2400:cb00:1234::')
+  })
+
+  it('returns non-IP strings unchanged', () => {
+    expect(anonymizeIp('hello world')).toBe('hello world')
+    expect(anonymizeIp('compass')).toBe('compass')
   })
 })
