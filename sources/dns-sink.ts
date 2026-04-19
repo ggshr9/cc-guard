@@ -9,13 +9,31 @@ export const CLOUDFLARE_PREFIXES: string[] = [
   '104.25.', '104.26.', '104.27.', '104.28.',
 ]
 
+// Cloudflare IPv6 prefixes. Source: https://www.cloudflare.com/ips-v6/
+// Matched against normalized (lowercase, no compression) IPv6 strings.
+export const CLOUDFLARE_V6_PREFIXES: string[] = [
+  '2400:cb00:', '2606:4700:', '2803:f800:', '2405:b500:',
+  '2405:8100:', '2a06:98c0:', '2c0f:f248:',
+]
+
+import { isIP } from 'net'
+
+export function isIpv4(s: string): boolean { return isIP(s) === 4 }
+export function isIpv6(s: string): boolean { return isIP(s) === 6 }
+
 export function isCloudflareIp(ip: string): boolean {
-  return CLOUDFLARE_PREFIXES.some(p => ip.startsWith(p))
+  if (isIpv4(ip)) return CLOUDFLARE_PREFIXES.some(p => ip.startsWith(p))
+  if (isIpv6(ip)) {
+    const lower = ip.toLowerCase()
+    return CLOUDFLARE_V6_PREFIXES.some(p => lower.startsWith(p))
+  }
+  return false
 }
 
 export function parseDigOutput(raw: string): string[] {
-  const ipRe = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/
-  return raw.split('\n').map(l => l.trim()).filter(l => ipRe.test(l))
+  return raw.split('\n')
+    .map(l => l.trim())
+    .filter(l => isIpv4(l) || isIpv6(l))
 }
 
 export interface LeakResult {

@@ -4,6 +4,7 @@ import { STATE_FILE, CONFIG_FILE, STATE_DIR } from './config.ts'
 import { runDaemon } from './daemon.ts'
 import { loadConfig } from './config-loader.ts'
 import { runWrap } from './wrap-runner.ts'
+import { installSystemdUnit } from './install-systemd.ts'
 
 async function main(): Promise<void> {
   const cmd = process.argv[2] ?? 'help'
@@ -16,6 +17,10 @@ async function main(): Promise<void> {
     case 'wrap': {
       const code = await runWrap(process.argv.slice(3))
       process.exit(code)
+    }
+    case 'install-systemd-unit': {
+      const force = process.argv.includes('--force')
+      process.exit(installSystemdUnit({ force }))
     }
     case 'help':
     case '--help':
@@ -81,6 +86,9 @@ Commands:
   doctor             Diagnose dependencies and permissions
   wrap <cmd> [args]  Exec <cmd> with pre-flight risk banner
                      (blocks only if daemon risk >= wrap.auto_confirm_below)
+  install-systemd-unit
+                     Generate ~/.config/systemd/user/cc-guard.service
+                     (Linux only; pass --force to overwrite)
   help               Show this help
 
 Config: ${CONFIG_FILE}
