@@ -97,10 +97,18 @@ export function loadConfig(file: string): CcGuardConfig {
   }
 
   const userAlerts = isObject(parsed.alerts) ? parsed.alerts : {}
+  const VALID_SEVERITIES: Severity[] = ['info', 'low', 'medium', 'high']
   for (const key of Object.keys(cfg.alerts) as (keyof CcGuardConfig['alerts'])[]) {
     const u = userAlerts[key]
     if (isObject(u)) {
-      cfg.alerts[key] = { ...cfg.alerts[key], ...u } as typeof cfg.alerts[typeof key]
+      // Validate min_level before merging — reject unknown severities silently
+      if ('min_level' in u && !VALID_SEVERITIES.includes(u.min_level as Severity)) {
+        delete u.min_level
+      }
+      // Cast via unknown — the alert union is keyed heterogeneously
+      // (different backends have different required fields), so a single
+      // merge expression can't satisfy each variant's type narrowly.
+      ;(cfg.alerts as Record<string, unknown>)[key] = { ...cfg.alerts[key], ...u }
     }
   }
 

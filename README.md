@@ -23,7 +23,8 @@ Each signal has a threshold; high-severity or multiple concurrent medium signals
 - ❌ **No TLS client impersonation.** We don't sit in the network path.
 - ❌ **No API probing.** We won't speculatively hit Anthropic to check your status.
 - ❌ **No auto-intervention.** We inform and advise. Decisions are yours.
-- ❌ **No data leaves your machine.** Everything runs locally, and all state lives under `~/.claude/channels/cc-guard/`.
+- ❌ **No data leaves your machine by default.** All core operation is local, and state lives under `~/.claude/channels/cc-guard/`. *Opt-in backends* `webhook` and `wechat-cc` send alert payloads off-machine when you explicitly enable them — disable them to keep everything local.
+- The `ip_lookup_endpoints` (ipinfo.io / api.ipify.org / icanhazip.com) are the only outbound requests during normal operation; they see your public IP (which Claude Code also sees). You can override with a self-hosted endpoint via config.
 
 ## Install
 
@@ -108,7 +109,8 @@ If you want to evade detection, cc-guard is the wrong tool. Look at [`motiful/cc
 - ❌ 不做 TLS 指纹绕过（那是 dario）
 - ❌ 不主动探测 Anthropic 账号状态
 - ❌ 不自动操作（杀进程 / 切账号 / 改网络配置）
-- ❌ 不上传任何数据到外部服务器
+- ❌ 默认不上传任何数据到外部服务器（opt-in 启用 webhook / wechat-cc 后台时会把 alert 内容发到用户配的 URL，要上传就自己开）
+- 正常运行期间唯一的外部网络请求是 IP 查询（ipinfo.io / api.ipify.org / icanhazip.com），这些服务看到的只是你的公网 IP（Claude Code 也能看到）。可在 config 里改成自建 endpoint
 
 ## 安装
 

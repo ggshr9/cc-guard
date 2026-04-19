@@ -1,12 +1,36 @@
 import { createHash } from 'crypto'
-import type { CcGuardConfig } from './config-loader'
+import type { CcGuardConfig, ThresholdSpec } from './config-loader'
 import type { Alert, Event, Severity, SignalName } from './events'
 
 const SEVERITY_RANK: Record<Severity, number> = {
   info: 0, low: 1, medium: 2, high: 3,
 }
 
-const ACTIVE_WINDOW_MS = 5 * 60 * 1000  // 5-minute active window
+export const ACTIVE_WINDOW_MS = 5 * 60 * 1000  // 5-minute active window
+
+/**
+ * Given an observed count and a threshold spec like `{medium: 2, high: 3}`,
+ * return the corresponding severity. Count must meet or exceed the threshold
+ * number. Highest-severity match wins.
+ */
+export function severityForCount(count: number, spec: ThresholdSpec): Severity {
+  const high = typeof spec.high === 'number' ? spec.high : undefined
+  const medium = typeof spec.medium === 'number' ? spec.medium : undefined
+  if (high !== undefined && count >= high) return 'high'
+  if (medium !== undefined && count >= medium) return 'medium'
+  return 'info'
+}
+
+/**
+ * Given a boolean condition and a threshold spec like `{high: true}`,
+ * return the corresponding severity if the condition fires.
+ */
+export function severityForBool(condition: boolean, spec: ThresholdSpec): Severity {
+  if (!condition) return 'info'
+  if (spec.high === true) return 'high'
+  if (spec.medium === true) return 'medium'
+  return 'info'
+}
 
 export const ADVICE: Record<SignalName, string> = {
   ip_change:           'Consider pausing 10 min; verify VPN/proxy stability.',
@@ -37,7 +61,7 @@ export interface RiskResult {
   active: SignalName[]
 }
 
-export function evaluateRisk(events: Event[], _cfg: CcGuardConfig): RiskResult {
+export function evaluateRisk(events: Event[], _cfg?: CcGuardConfig): RiskResult {
   const cutoff = Date.now() - ACTIVE_WINDOW_MS
   const active = events.filter(e => e.timestamp >= cutoff)
 

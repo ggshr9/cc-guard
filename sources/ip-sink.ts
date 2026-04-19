@@ -34,12 +34,12 @@ export function voteConsensus(ips: string[]): string | null {
 }
 
 export function classifyAsn(
-  info: { asn?: string; org?: string; country?: string },
+  info: { asn?: string; org?: string; country?: string; ip?: string },
   datacenterAsns: Set<string>,
-): IpInfo & { ip: string } {
+): IpInfo {
   const is_datacenter = !!(info.asn && datacenterAsns.has(info.asn))
   return {
-    ip: '',
+    ip: info.ip ?? '',
     asn: info.asn,
     country: info.country,
     org: info.org,
@@ -55,4 +55,22 @@ export async function lookupPublicIp(endpoints: LookupEndpoint[]): Promise<strin
   )
   const ips = results.flatMap(r => r.status === 'fulfilled' && r.value ? [r.value] : [])
   return voteConsensus(ips)
+}
+
+/** Fetch ASN + country + org for a known IP via ipinfo.io.
+ *  Returns partial info (or empty) if the lookup fails — this is best-effort. */
+export async function lookupIpInfo(ip: string): Promise<{ asn?: string; country?: string; org?: string }> {
+  try {
+    const res = await fetch(`https://ipinfo.io/${ip}/json`, { signal: AbortSignal.timeout(5000) })
+    if (!res.ok) return {}
+    const body = await res.json() as { org?: string; country?: string }
+    const out: { asn?: string; country?: string; org?: string } = {}
+    const asnMatch = body.org?.match(/^(AS\d+)/)
+    if (asnMatch?.[1]) out.asn = asnMatch[1]
+    if (body.country) out.country = body.country
+    if (body.org) out.org = body.org
+    return out
+  } catch {
+    return {}
+  }
 }

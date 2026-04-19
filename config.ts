@@ -20,6 +20,12 @@ export const CLAUDE_TELEMETRY_DIR = join(CLAUDE_HOME, 'telemetry')
 export const CLAUDE_STATSIG_DIR   = join(CLAUDE_HOME, 'statsig')
 export const CLAUDE_PROJECTS_DIR  = join(CLAUDE_HOME, 'projects')
 
+/** DNS resolver config (Linux); macOS uses `scutil --dns` instead of a file. */
+export const RESOLV_CONF = '/etc/resolv.conf'
+
+/** Bundled datacenter ASN blocklist path (relative to repo root). */
+export const DC_ASN_FILE = join(import.meta.dirname ?? '.', 'data', 'dc-asn.json')
+
 /** Ring-buffer hard limits. */
 export const MAX_EVENTS      = 10_000
 export const RETENTION_MS    = 24 * 60 * 60 * 1000  // 24h

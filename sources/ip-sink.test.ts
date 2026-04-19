@@ -31,7 +31,7 @@ describe('classifyAsn', () => {
   })
 
   it('handles missing asn field gracefully', () => {
-    const result = classifyAsn({ asn: undefined, org: 'Unknown', country: '??' }, new Set())
+    const result = classifyAsn({ org: 'Unknown', country: '??' }, new Set())
     expect(result.is_datacenter).toBe(false)
   })
 })

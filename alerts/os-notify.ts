@@ -7,6 +7,19 @@ const SEVERITY_RANK: Record<Severity, number> = { info: 0, low: 1, medium: 2, hi
 
 const URGENCY_MAP: Record<Severity, string> = { info: 'low', low: 'low', medium: 'normal', high: 'critical' }
 
+/** Escape for PowerShell single-quoted string (double the quote).
+ *  Also strips control chars and encodes XML-unsafe characters for the
+ *  toast template. */
+function escapeForPowershell(s: string): string {
+  return s
+    .replace(/'/g, "''")          // PowerShell single-quote escape
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/[\x00-\x1f\x7f]/g, ' ')  // strip control chars
+}
+
 export function buildNotifyCommand(plat: string, alert: Alert): string[] {
   const title = `${alert.title} (${alert.level.toUpperCase()})`
   const body = `${alert.message}\n→ ${alert.advice}`
@@ -14,12 +27,14 @@ export function buildNotifyCommand(plat: string, alert: Alert): string[] {
     return ['notify-send', `--urgency=${URGENCY_MAP[alert.level]}`, title, body]
   }
   if (plat === 'darwin') {
-    const escaped = body.replace(/"/g, '\\"')
-    const titleE = title.replace(/"/g, '\\"')
+    const escaped = body.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+    const titleE = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
     return ['osascript', '-e', `display notification "${escaped}" with title "${titleE}"`]
   }
   if (plat === 'win32') {
-    const script = `[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] > $null; $template = '<toast><visual><binding template="ToastGeneric"><text>${title}</text><text>${body.replace(/\n/g, ' ')}</text></binding></visual></toast>'; $xml = [Windows.Data.Xml.Dom.XmlDocument]::new(); $xml.LoadXml($template); $toast = [Windows.UI.Notifications.ToastNotification]::new($xml); [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('cc-guard').Show($toast)`
+    const tEsc = escapeForPowershell(title)
+    const bEsc = escapeForPowershell(body.replace(/\n/g, ' '))
+    const script = `[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] > $null; $template = '<toast><visual><binding template="ToastGeneric"><text>${tEsc}</text><text>${bEsc}</text></binding></visual></toast>'; $xml = [Windows.Data.Xml.Dom.XmlDocument]::new(); $xml.LoadXml($template); $toast = [Windows.UI.Notifications.ToastNotification]::new($xml); [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('cc-guard').Show($toast)`
     return ['powershell.exe', '-NoProfile', '-Command', script]
   }
   return []
