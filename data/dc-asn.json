@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "updated": "2026-04-19",
+  "description": "Datacenter ASNs — Claude typically flags requests from these IPs as non-human.",
+  "asns": [
+    "AS13335",
+    "AS14061",
+    "AS14618",
+    "AS15169",
+    "AS16276",
+    "AS16509",
+    "AS20473",
+    "AS24429",
+    "AS31898",
+    "AS32934",
+    "AS37963",
+    "AS45102",
+    "AS45753",
+    "AS54825",
+    "AS63949",
+    "AS8075",
+    "AS714",
+    "AS8560",
+    "AS21859"
+  ]
+}
