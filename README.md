@@ -48,6 +48,37 @@ cc-guard run              # start daemon in foreground
 cc-guard status           # dashboard summary
 cc-guard check            # one-shot scan + config summary
 cc-guard doctor           # diagnose setup
+cc-guard wrap claude ...  # pre-flight risk banner before Claude Code
+```
+
+### Pre-flight block mode (opt-in)
+
+`cc-guard wrap claude [args...]` exec's Claude Code after a quick risk check.
+When current risk is **below** `wrap.auto_confirm_below` (default: `"high"`),
+it's a silent passthrough. When risk meets or exceeds the threshold, a banner
+appears:
+
+```
+─────────────────────────────────────────────────
+[cc-guard] 🚨 Risk level: HIGH (3 active signals)
+  - ip_change
+  - concurrent_session
+  - streaming_stall
+  → Consider pausing 10 min; verify VPN stability
+Press Enter to continue, Ctrl+C to abort.
+  (auto-continue in 10s if no input)
+─────────────────────────────────────────────────
+```
+
+**Fail-open defaults:** non-TTY contexts (CI, pipes, nohup), 10-second timeout,
+and "daemon not running" all passthrough rather than block. The wrapper never
+modifies args or intercepts stdio — after the prompt it spawns the real
+binary with `stdio: inherit` and exits with its code.
+
+To install as a shell alias (recommended for Claude Code):
+
+```bash
+alias claude='cc-guard wrap claude'   # add to ~/.bashrc / ~/.zshrc
 ```
 
 ## Configuration

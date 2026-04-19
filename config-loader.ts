@@ -36,6 +36,10 @@ export interface CcGuardConfig {
     anonymize_ip_in_logs: boolean
     send_analytics: boolean
   }
+  wrap: {
+    auto_confirm_below: Severity
+    timeout_seconds: number
+  }
 }
 
 export const DEFAULT_CONFIG: CcGuardConfig = {
@@ -71,6 +75,10 @@ export const DEFAULT_CONFIG: CcGuardConfig = {
   privacy: {
     anonymize_ip_in_logs: false,
     send_analytics: false,
+  },
+  wrap: {
+    auto_confirm_below: 'high',
+    timeout_seconds: 10,
   },
 }
 
@@ -117,6 +125,17 @@ export function loadConfig(file: string): CcGuardConfig {
   }
   if (isObject(parsed.privacy)) {
     cfg.privacy = { ...cfg.privacy, ...parsed.privacy } as CcGuardConfig['privacy']
+  }
+  if (isObject(parsed.wrap)) {
+    const u = parsed.wrap
+    // Validate auto_confirm_below; drop invalid values
+    if ('auto_confirm_below' in u && !VALID_SEVERITIES.includes(u.auto_confirm_below as Severity)) {
+      delete u.auto_confirm_below
+    }
+    if ('timeout_seconds' in u && (typeof u.timeout_seconds !== 'number' || u.timeout_seconds < 0)) {
+      delete u.timeout_seconds
+    }
+    cfg.wrap = { ...cfg.wrap, ...u } as CcGuardConfig['wrap']
   }
 
   return cfg
