@@ -5,7 +5,7 @@ import {
   RESOLV_CONF, DC_ASN_FILE, UNKNOWN_EVENTS,
   MAX_EVENTS, RETENTION_MS, FLUSH_INTERVAL_MS,
 } from './config.ts'
-import { appendFileSync } from 'fs'
+import { appendFileSync, truncateSync } from 'fs'
 import { RingBuffer } from './ring-buffer.ts'
 import { loadConfig } from './config-loader.ts'
 import { evaluateRisk, buildAlert, severityForCount, severityForBool } from './rules.ts'
@@ -20,7 +20,7 @@ import { OsNotifyBackend } from './alerts/os-notify.ts'
 import { WebhookBackend } from './alerts/webhook.ts'
 import { WechatCcBackend } from './alerts/wechat-cc.ts'
 import { NetworkSink } from './sources/network-sink.ts'
-import { lookupPublicIp, lookupIpInfo, classifyAsn, DEFAULT_ENDPOINTS, type IpInfo } from './sources/ip-sink.ts'
+import { lookupPublicIp, lookupIpInfo, classifyAsn, buildEndpoint, type IpInfo } from './sources/ip-sink.ts'
 import { spawn } from 'child_process'
 import type { Event, Severity } from './events.ts'
 
@@ -67,18 +67,22 @@ export async function runDaemon(): Promise<void> {
   if (!existsSync(STATE_DIR)) mkdirSync(STATE_DIR, { recursive: true, mode: 0o700 })
   acquirePidLock()
 
+  // One-shot latch for noisy file write warnings (unknown_events.log etc.)
+  let unknownEventsWarned = false
+
   let cfg = loadConfig(CONFIG_FILE)
   const datacenterAsns = loadDatacenterAsns()
   const buffer = new RingBuffer({ file: STATE_FILE, capacity: MAX_EVENTS, retentionMs: RETENTION_MS })
   buffer.load()
 
-  const router = new AlertRouter([
+  const buildRouter = (): AlertRouter => new AlertRouter([
     new StderrBackend(cfg.alerts.stderr),
     new JsonLogBackend(cfg.alerts.json_log, ALERTS_LOG, cfg.privacy.anonymize_ip_in_logs),
     new OsNotifyBackend(cfg.alerts.os_notify),
     new WebhookBackend(cfg.alerts.webhook),
     new WechatCcBackend(cfg.alerts.wechat_cc),
   ])
+  let router = buildRouter()
 
   /** Emit an event, push to buffer, evaluate risk, dispatch alert if warranted.
    *  Any event with severity medium+ fires an alert directly (router handles
@@ -181,12 +185,22 @@ export async function runDaemon(): Promise<void> {
         if (tally.unknownEvents.length > 0) {
           const unique = [...new Set(tally.unknownEvents)]
           try {
+            // Cap at 10 MiB — truncate rather than rotate to keep it simple
+            try {
+              const size = statSync(UNKNOWN_EVENTS).size
+              if (size > 10 * 1024 * 1024) truncateSync(UNKNOWN_EVENTS, 0)
+            } catch { /* file missing or stat failed — appendFileSync creates it */ }
             appendFileSync(
               UNKNOWN_EVENTS,
               unique.map(e => `${new Date().toISOString()} ${e}`).join('\n') + '\n',
               { mode: 0o600 },
             )
-          } catch { /* non-fatal */ }
+          } catch (err) {
+            if (!unknownEventsWarned) {
+              unknownEventsWarned = true
+              process.stderr.write(`[cc-guard] unknown_events.log write failed: ${err instanceof Error ? err.message : String(err)}\n`)
+            }
+          }
         }
 
         const authFailed = tally.byHighEvent.tengu_api_auth_failed ?? 0
@@ -231,7 +245,8 @@ export async function runDaemon(): Promise<void> {
   let lastIp: string | null = null
   let lastIpInfo: IpInfo | null = null
   net.on('change', async () => {
-    const ip = await lookupPublicIp(DEFAULT_ENDPOINTS)
+    const endpoints = cfg.network.ip_lookup_endpoints.map(buildEndpoint)
+    const ip = await lookupPublicIp(endpoints)
     if (!ip || ip === lastIp) return
     const info = await lookupIpInfo(ip)
     const classified = classifyAsn({ ...info, ip }, datacenterAsns)
@@ -332,6 +347,7 @@ export async function runDaemon(): Promise<void> {
     watch(CONFIG_FILE, () => {
       try {
         cfg = loadConfig(CONFIG_FILE)
+        router = buildRouter()  // rebuild so backend configs are refreshed
         process.stderr.write('[cc-guard] config reloaded\n')
       } catch { /* keep prior cfg */ }
     })

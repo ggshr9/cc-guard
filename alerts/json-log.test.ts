@@ -73,6 +73,30 @@ describe('anonymizeIp', () => {
     expect(anonymizeIp('2400:cb00:1234:5678::5')).toBe('2400:cb00:1234::')
   })
 
+  it('handles compressed IPv6 forms correctly', () => {
+    expect(anonymizeIp('::1')).toBe('1::')              // all-zero prefix
+    expect(anonymizeIp('2400:cb00::1')).toBe('2400:cb00:1::')  // mid-compression
+    expect(anonymizeIp('fe80::abcd')).toBe('fe80:abcd::')      // short address
+  })
+
+})
+
+describe('JsonLogBackend anonymization scope', () => {
+  it('anonymizes IPs in title and advice too (not just message / evidence)', async () => {
+    const b = new JsonLogBackend({ enabled: true, min_level: 'low' }, logFile, true)
+    await b.send({
+      ...alert(),
+      title: 'IP alert for 1.2.3.4',
+      advice: 'Block 5.6.7.8 next time',
+      evidence: [{ timestamp: 1, signal: 'ip_change', severity: 'medium', payload: {} }],
+    })
+    const parsed = JSON.parse(readFileSync(logFile, 'utf8').trim())
+    expect(parsed.title).toContain('1.2.3.0')
+    expect(parsed.title).not.toContain('1.2.3.4')
+    expect(parsed.advice).toContain('5.6.7.0')
+    expect(parsed.advice).not.toContain('5.6.7.8')
+  })
+
   it('returns non-IP strings unchanged', () => {
     expect(anonymizeIp('hello world')).toBe('hello world')
     expect(anonymizeIp('compass')).toBe('compass')

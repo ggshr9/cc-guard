@@ -4,40 +4,42 @@ import type { AlertBackend } from './types'
 
 const SEVERITY_RANK: Record<Severity, number> = { info: 0, low: 1, medium: 2, high: 3 }
 
-/** Mask an IPv4 or IPv6 address by zeroing the low bits. Returns the
- *  input unchanged when it doesn't look like an IP. */
+/** Mask IPv4 / IPv6 addresses found anywhere in the input string.
+ *  - IPv4 is matched embedded (substring-safe via word boundaries).
+ *  - IPv6 is only masked when the whole string is a valid address; partial
+ *    matches inside prose are left alone to avoid mangling unrelated text.
+ *  Returns the input unchanged when no match is found. */
 export function anonymizeIp(s: string): string {
-  // IPv4: zero the last octet
-  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(s)) {
-    return s.replace(/\.\d+$/, '.0')
+  // Substring-safe IPv4: replace every "a.b.c.d" with "a.b.c.0"
+  let out = s.replace(/\b(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}\b/g, '$1.0')
+
+  // Whole-string IPv6: only when the entire input looks like an address
+  if (out.includes(':') && /^[0-9a-fA-F:]+$/.test(out)) {
+    const parts = out.split(':').filter(p => p.length > 0)
+    if (parts.length === 0) return '::'
+    if (parts.length <= 3) return parts.join(':') + '::'
+    return parts.slice(0, 3).join(':') + '::'
   }
-  // IPv6: keep first 3 groups, zero the rest
-  if (s.includes(':') && /^[0-9a-fA-F:]+$/.test(s)) {
-    const parts = s.split(':')
-    if (parts.length >= 3) return parts.slice(0, 3).join(':') + '::'
-  }
-  return s
+  return out
 }
 
-/** Recursively anonymize IP-shaped strings inside an arbitrary value. */
+/** Recursively walk a value, applying anonymizeIp to every string leaf. */
+function visit(node: unknown): unknown {
+  if (typeof node === 'string') return anonymizeIp(node)
+  if (Array.isArray(node)) return node.map(visit)
+  if (node && typeof node === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(node)) out[k] = visit(v)
+    return out
+  }
+  return node
+}
+
+/** Deep-clone an alert and anonymize every IP-shaped string in every field
+ *  (message, advice, title, evidence.payload — everything). */
 function anonymizeAlert(alert: Alert): Alert {
-  const clone: Alert = JSON.parse(JSON.stringify(alert))
-  const visit = (node: unknown): unknown => {
-    if (typeof node === 'string') return anonymizeIp(node)
-    if (Array.isArray(node)) return node.map(visit)
-    if (node && typeof node === 'object') {
-      const out: Record<string, unknown> = {}
-      for (const [k, v] of Object.entries(node)) out[k] = visit(v)
-      return out
-    }
-    return node
-  }
-  clone.message = visit(clone.message) as string
-  const ev = clone.evidence as unknown as Record<string, unknown>[]
-  for (const e of ev) {
-    e.payload = visit(e.payload) as Record<string, unknown>
-  }
-  return clone
+  const clone = JSON.parse(JSON.stringify(alert)) as Alert
+  return visit(clone) as Alert
 }
 
 export class JsonLogBackend implements AlertBackend {

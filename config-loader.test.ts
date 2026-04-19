@@ -82,4 +82,24 @@ describe('loadConfig', () => {
     const cfg = loadConfig(configFile)
     expect(cfg.wrap.timeout_seconds).toBe(30)
   })
+
+  it('rejects non-boolean privacy values', () => {
+    writeFileSync(configFile, JSON.stringify({
+      privacy: { anonymize_ip_in_logs: 'yes', send_analytics: 1, unknownKey: true },
+    }))
+    const cfg = loadConfig(configFile)
+    expect(cfg.privacy.anonymize_ip_in_logs).toBe(DEFAULT_CONFIG.privacy.anonymize_ip_in_logs)
+    expect(cfg.privacy.send_analytics).toBe(DEFAULT_CONFIG.privacy.send_analytics)
+    // unknownKey should NOT appear in final cfg
+    expect(Object.keys(cfg.privacy).sort()).toEqual(['anonymize_ip_in_logs', 'send_analytics'])
+  })
+
+  it('accepts valid boolean privacy values', () => {
+    writeFileSync(configFile, JSON.stringify({
+      privacy: { anonymize_ip_in_logs: true, send_analytics: false },
+    }))
+    const cfg = loadConfig(configFile)
+    expect(cfg.privacy.anonymize_ip_in_logs).toBe(true)
+    expect(cfg.privacy.send_analytics).toBe(false)
+  })
 })
