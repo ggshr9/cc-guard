@@ -1,0 +1,24 @@
+{
+  "name": "cc-guard",
+  "version": "0.1.0-dev",
+  "description": "Observation-only health monitor for Claude Code sessions. Shows what your session reports to Anthropic and warns about patterns that commonly precede account reviews.",
+  "type": "module",
+  "bin": {
+    "cc-guard": "./cli.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "start": "bun cli.ts"
+  },
+  "license": "MIT",
+  "author": "ggshr9",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ggshr9/cc-guard.git"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
