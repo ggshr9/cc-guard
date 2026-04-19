@@ -35,22 +35,25 @@ Still TODO for polish:
 - Shell completion for wrapped-command name (fish/zsh/bash)
 - Log of past block decisions (risk state when user confirmed vs aborted) for self-reflection
 
-### Systemd unit generator
+### ✅ Systemd unit generator (shipped)
 
-`cc-guard install-systemd-unit` — emit `~/.config/systemd/user/cc-guard.service` with:
-- `ExecStart=bun /path/to/cli.ts run`
-- `Restart=on-failure`
-- `RestartSec=10s`
-- Documents user-level install: `systemctl --user enable --now cc-guard`
+`cc-guard install-systemd-unit` emits `~/.config/systemd/user/cc-guard.service`:
+- `ExecStart=<bun path> <cli.ts path> run`
+- `Restart=on-failure` + `RestartSec=10s`
+- `StandardOutput/StandardError=journal`
+- `WantedBy=default.target` (user-level autostart on login)
 
-Non-systemd systems: skip with a helpful message pointing to tmux/nohup examples.
+Non-Linux / no-systemctl → prints tmux / nohup fallback instead of failing.
 
-### IPv6 support
+Module: `install-systemd.ts` with 7 unit tests on `buildUnitContent`.
 
-`voteConsensus` and IP-compare logic currently assume IPv4. Fixes:
-- Accept IPv6 addresses in `parseDigOutput` and public-IP endpoint responses
-- Normalize `::1` forms before comparing
-- Expand ASN classification to IPv6 (ipinfo.io returns them for v6 too)
+### ✅ IPv6 support (shipped)
+
+Lifted the hardcoded IPv4 assumptions:
+- `isIpv4`/`isIpv6` via Node's `net.isIP` (proper parser, handles `::` compression)
+- `parseDigOutput` now accepts mixed IPv4 + IPv6 `dig +short` output
+- `isCloudflareIp` added 7 Cloudflare IPv6 prefixes (case-insensitive)
+- 4 new dns-sink tests covering CF v6 match, v4+v6 parse, malformed rejection
 
 ---
 
