@@ -21,21 +21,19 @@ Ship as v0.1.0-alpha when E2E passes, tag v0.1.0 when users have run it a week w
 
 **Goal:** User-consented pre-flight warning, without ever touching Claude Code state or spoofing anything.
 
-### Level 3: Pre-flight block mode
+### ✅ Level 3: Pre-flight block mode (shipped)
 
-`cc-guard wrap claude <args...>` — a shell wrapper that:
-1. Before invoking `claude`, reads current risk state from `state.json`.
-2. If risk is `medium+`, prints a red banner summarizing the active signals and advice.
-3. Prompts user with "Press Enter to continue, Ctrl+C to abort".
-4. On continue, exec's `claude` with the original argv and user's TTY.
+`cc-guard wrap <command> [args...]` — shell wrapper landed on master. Flow:
+1. Resolves target binary via PATH (skips `cc-guard` self-paths to avoid recursion)
+2. Reads `state.json`, runs `evaluateRisk` to get aggregate severity
+3. If risk >= `wrap.auto_confirm_below` AND stdin is a TTY → banner + prompt
+4. Passthrough in all other cases (non-TTY, daemon not running, below threshold)
+5. Spawns target with `stdio: inherit`, exits with its code
 
-Plus opt-in config: `wrap.auto_confirm_below: "high"` — only block on high, silently pass medium.
-
-**Design constraints carried forward:**
-- No modification of the `claude` binary, its args, or its env
-- No interception of its stdout/stderr — exec and let it take over
-- User's choice every time; no "remember this answer" toggle
-- MUST document that this adds 1-2 seconds of latency to each `claude` startup
+Spec: `docs/specs/2026-04-19-wrap-command.md`
+Still TODO for polish:
+- Shell completion for wrapped-command name (fish/zsh/bash)
+- Log of past block decisions (risk state when user confirmed vs aborted) for self-reflection
 
 ### Systemd unit generator
 

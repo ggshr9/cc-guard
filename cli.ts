@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'fs'
 import { STATE_FILE, CONFIG_FILE, STATE_DIR } from './config.ts'
 import { runDaemon } from './daemon.ts'
 import { loadConfig } from './config-loader.ts'
+import { runWrap } from './wrap-runner.ts'
 
 async function main(): Promise<void> {
   const cmd = process.argv[2] ?? 'help'
@@ -12,6 +13,10 @@ async function main(): Promise<void> {
     case 'status': return showStatus()
     case 'check': return runCheck()
     case 'doctor': return runDoctor()
+    case 'wrap': {
+      const code = await runWrap(process.argv.slice(3))
+      process.exit(code)
+    }
     case 'help':
     case '--help':
     case '-h': return showHelp()
@@ -74,6 +79,8 @@ Commands:
   status             Show current state dashboard
   check              One-shot scan + config summary
   doctor             Diagnose dependencies and permissions
+  wrap <cmd> [args]  Exec <cmd> with pre-flight risk banner
+                     (blocks only if daemon risk >= wrap.auto_confirm_below)
   help               Show this help
 
 Config: ${CONFIG_FILE}
