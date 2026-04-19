@@ -59,20 +59,45 @@ Lifted the hardcoded IPv4 assumptions:
 
 ## v0.3 — Distribution + polish
 
-### Alert backends
+### ✅ Privacy modes (shipped)
 
-- **Email backend** — SMTP via Nodemailer. Opt-in, min_level gated. Useful for overnight alerts when desktop is unattended.
-- **Slack / Discord / DingTalk / Feishu direct backends** — just thin wrappers over webhook with per-platform message formatting. Lower priority because webhook already works for these services.
+- `privacy.anonymize_ip_in_logs` is now honored in `alerts/json-log.ts` — zeros IPv4 last octet and IPv6 low bits before writing to `alerts.log`
+- Self-hosted IP-lookup endpoint template documented at `docs/examples/self-hosted-ip-endpoint.md` (Cloudflare Worker + nginx snippets)
 
-### Privacy modes
+### ✅ Events catalog — unknown-event logging (shipped)
 
-- `privacy.anonymize_ip_in_logs` is declared in config but not honored. Implement: strip last octet in alerts.log, replace with `xxx.xxx.xxx.0`.
-- Optional self-hosted IP-lookup endpoint: document the 2-line Cloudflare Worker that returns `{ip, asn, country}` so privacy-conscious users can avoid ipinfo.io entirely.
+`daemon.ts` now writes every unclassified Tengu event name to
+`~/.claude/channels/cc-guard/unknown_events.log` so users / maintainers
+can grow the catalog from real-world observations.
 
-### Events catalog expansion
+Remote fetch of updated `events-catalog.json` is deferred — not worth
+the network + version-check complexity until we see actual catalog drift.
 
-- Import + classify known unknowns from community `unknown_events.log` submissions
-- Support remote fetch of updated `events-catalog.json` from the repo (fallback to bundled copy)
+### ✅ Richer `cc-guard status` dashboard (shipped)
+
+Upgraded from the ~4-line printout to:
+- Risk level with color emoji
+- Permanent device ID (transparency angle — the fingerprint Anthropic sees)
+- Current Claude Code session ID
+- Daemon alive/dead + uptime
+- Per-signal 5min + 1h counts
+- Last 3 alerts from `alerts.log`
+- `--watch` flag: 2s refresh loop for tmux panes
+- `--raw` flag: JSON dump
+
+### Skipped in v0.3
+
+- **Email backend** — requires nodemailer runtime dep or SMTP-from-scratch.
+  Document using webhook → Mailgun/SendGrid as the alternative.
+- **Slack / Discord / DingTalk / Feishu direct backends** — webhook path
+  is sufficient. Users can template their own JSON schema per platform.
+  Direct backends add maintenance burden for marginal value.
+
+### Carried forward from v0.1.x
+
+- AlertRouter `lastSent` sweep on dispatch (unbounded map growth)
+- webhook.test: add fetch-throw path (network-level error)
+- network-sink.test.ts: mock `ip monitor` subprocess
 
 ---
 

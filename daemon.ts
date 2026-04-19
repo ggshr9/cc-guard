@@ -2,9 +2,10 @@ import { existsSync, mkdirSync, writeFileSync, watch, readFileSync, openSync, cl
 import {
   STATE_DIR, STATE_FILE, CONFIG_FILE, ALERTS_LOG, PID_FILE,
   CLAUDE_TELEMETRY_DIR, CLAUDE_PROJECTS_DIR, CLAUDE_CONFIG,
-  RESOLV_CONF, DC_ASN_FILE,
+  RESOLV_CONF, DC_ASN_FILE, UNKNOWN_EVENTS,
   MAX_EVENTS, RETENTION_MS, FLUSH_INTERVAL_MS,
 } from './config.ts'
+import { appendFileSync } from 'fs'
 import { RingBuffer } from './ring-buffer.ts'
 import { loadConfig } from './config-loader.ts'
 import { evaluateRisk, buildAlert, severityForCount, severityForBool } from './rules.ts'
@@ -73,7 +74,7 @@ export async function runDaemon(): Promise<void> {
 
   const router = new AlertRouter([
     new StderrBackend(cfg.alerts.stderr),
-    new JsonLogBackend(cfg.alerts.json_log, ALERTS_LOG),
+    new JsonLogBackend(cfg.alerts.json_log, ALERTS_LOG, cfg.privacy.anonymize_ip_in_logs),
     new OsNotifyBackend(cfg.alerts.os_notify),
     new WebhookBackend(cfg.alerts.webhook),
     new WechatCcBackend(cfg.alerts.wechat_cc),
@@ -174,6 +175,19 @@ export async function runDaemon(): Promise<void> {
 
         const events = parseTelemetryFile(buf.toString('utf8'))
         const tally = countByCategory(events)
+
+        // Log unknown event names so users/maintainers can expand the catalog.
+        // Dedupe within the tick, append one line per new event name.
+        if (tally.unknownEvents.length > 0) {
+          const unique = [...new Set(tally.unknownEvents)]
+          try {
+            appendFileSync(
+              UNKNOWN_EVENTS,
+              unique.map(e => `${new Date().toISOString()} ${e}`).join('\n') + '\n',
+              { mode: 0o600 },
+            )
+          } catch { /* non-fatal */ }
+        }
 
         const authFailed = tally.byHighEvent.tengu_api_auth_failed ?? 0
         if (authFailed > 0) {
