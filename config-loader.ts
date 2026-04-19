@@ -128,12 +128,19 @@ export function loadConfig(file: string): CcGuardConfig {
   }
   if (isObject(parsed.wrap)) {
     const u = parsed.wrap
-    // Validate auto_confirm_below; drop invalid values
+    // Validate auto_confirm_below — must be a real severity. 'info' means
+    // "never block" (shouldBlock handles that); we still accept it for
+    // clarity but the lowest *blocking* level is 'low'.
     if ('auto_confirm_below' in u && !VALID_SEVERITIES.includes(u.auto_confirm_below as Severity)) {
       delete u.auto_confirm_below
     }
-    if ('timeout_seconds' in u && (typeof u.timeout_seconds !== 'number' || u.timeout_seconds < 0)) {
-      delete u.timeout_seconds
+    // timeout_seconds must be a positive finite number. 0 would fire the
+    // timer immediately (skip the wait entirely), NaN/Infinity break setTimeout.
+    if ('timeout_seconds' in u) {
+      const n = u.timeout_seconds
+      if (typeof n !== 'number' || !Number.isFinite(n) || n <= 0) {
+        delete u.timeout_seconds
+      }
     }
     cfg.wrap = { ...cfg.wrap, ...u } as CcGuardConfig['wrap']
   }

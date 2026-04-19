@@ -60,4 +60,26 @@ describe('loadConfig', () => {
     expect(cfg.alerts.webhook.url).toBe('https://example.com')
     expect(cfg.alerts.webhook.min_level).toBe('high')
   })
+
+  it('rejects invalid wrap.auto_confirm_below', () => {
+    writeFileSync(configFile, JSON.stringify({
+      wrap: { auto_confirm_below: 'nonsense' },
+    }))
+    const cfg = loadConfig(configFile)
+    expect(cfg.wrap.auto_confirm_below).toBe(DEFAULT_CONFIG.wrap.auto_confirm_below)
+  })
+
+  it('rejects wrap.timeout_seconds that is 0, negative, NaN, or Infinity', () => {
+    for (const bad of [0, -5, Number.NaN, Number.POSITIVE_INFINITY, 'abc']) {
+      writeFileSync(configFile, JSON.stringify({ wrap: { timeout_seconds: bad } }))
+      const cfg = loadConfig(configFile)
+      expect(cfg.wrap.timeout_seconds).toBe(DEFAULT_CONFIG.wrap.timeout_seconds)
+    }
+  })
+
+  it('preserves valid wrap.timeout_seconds', () => {
+    writeFileSync(configFile, JSON.stringify({ wrap: { timeout_seconds: 30 } }))
+    const cfg = loadConfig(configFile)
+    expect(cfg.wrap.timeout_seconds).toBe(30)
+  })
 })

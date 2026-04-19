@@ -5,12 +5,25 @@
  * This module is pure so it can be unit-tested without any env dependencies.
  */
 import { isAbsolute, resolve as resolvePath } from 'path'
+import { realpathSync } from 'fs'
 import type { Severity } from './events'
 
 const SEVERITY_RANK: Record<Severity, number> = { info: 0, low: 1, medium: 2, high: 3 }
 
+/** Return true iff `overall` risk meets or exceeds `threshold`. An `info`
+ *  threshold is treated as "never block" — the lowest meaningful guard
+ *  level is `low`. This avoids the foot-gun where `shouldBlock('info','info')`
+ *  would otherwise return true and silently defeat passthrough. */
 export function shouldBlock(overall: Severity, threshold: Severity): boolean {
+  if (threshold === 'info') return false
   return SEVERITY_RANK[overall] >= SEVERITY_RANK[threshold]
+}
+
+/** Dereference symlinks when possible (realpath), fall back to resolve() for
+ *  paths that don't exist (e.g. during arg validation). */
+function canonicalize(path: string): string {
+  try { return realpathSync(path) }
+  catch { return resolvePath(path) }
 }
 
 /**
@@ -26,9 +39,13 @@ export function resolveBinary(
   pathCandidates: string[],
 ): string | null {
   if (isAbsolute(command)) return command
-  const selfAbs = resolvePath(selfPath)
+  const selfAbs = canonicalize(selfPath)
   for (const candidate of pathCandidates) {
-    if (resolvePath(candidate) === selfAbs) continue
+    // Compare BOTH lexical and realpath — catches direct-path self reference
+    // AND symlink redirections like `~/bin/claude → ~/.bun/bin/cc-guard`.
+    const lexical = resolvePath(candidate)
+    const canonical = canonicalize(candidate)
+    if (lexical === selfAbs || canonical === selfAbs) continue
     return candidate
   }
   return null
