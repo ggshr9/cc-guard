@@ -14,11 +14,10 @@ describe('shouldBlock', () => {
     expect(shouldBlock('medium', 'medium')).toBe(true)
   })
 
-  it('treats info threshold as never blocking', () => {
-    expect(shouldBlock('low', 'info')).toBe(true)
-    // any risk at all blocks — but UX-wise "never block" is achieved by
-    // user picking a high enough threshold. info threshold is valid but
-    // useless; we don't protect against it.
+  it('treats info threshold as "never block" (safer default)', () => {
+    expect(shouldBlock('info', 'info')).toBe(false)
+    expect(shouldBlock('low', 'info')).toBe(false)
+    expect(shouldBlock('high', 'info')).toBe(false)
   })
 })
 

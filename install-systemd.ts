@@ -10,9 +10,9 @@
  * On non-Linux or systems without systemd, prints a helpful message pointing
  * at tmux / nohup alternatives.
  */
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, realpathSync, writeFileSync } from 'fs'
 import { homedir, platform } from 'os'
-import { join, dirname } from 'path'
+import { isAbsolute, join, dirname } from 'path'
 import { spawnSync } from 'child_process'
 
 /** The path we write the unit to. Exposed for tests. */
@@ -66,12 +66,24 @@ export function installSystemdUnit(opts: { force?: boolean } = {}): number {
     return 1
   }
 
-  // Locate cc-guard executable: prefer the currently-running one, fall back to PATH
-  const executable = process.execPath
-  const scriptPath = process.argv[1] ?? ''
-  const args = scriptPath ? [scriptPath, 'run'] : ['run']
+  // Resolve executable + script to absolute realpaths so the unit works
+  // regardless of CWD and doesn't break when symlinks (bun link) get renamed.
+  let executable = process.execPath
+  try { executable = realpathSync(executable) } catch {}
 
-  const content = buildUnitContent(executable, args)
+  const rawScript = process.argv[1] ?? ''
+  if (!rawScript) {
+    process.stderr.write('[cc-guard] install-systemd-unit: cannot determine script path from process.argv[1]\n')
+    return 1
+  }
+  let scriptPath = rawScript
+  try { scriptPath = realpathSync(scriptPath) } catch {}
+  if (!isAbsolute(scriptPath)) {
+    process.stderr.write(`[cc-guard] install-systemd-unit: script path '${rawScript}' is not absolute; invoke cc-guard with an absolute path or via PATH\n`)
+    return 1
+  }
+
+  const content = buildUnitContent(executable, [scriptPath, 'run'])
   const dir = dirname(target)
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   writeFileSync(target, content, { mode: 0o644 })
