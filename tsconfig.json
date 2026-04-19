@@ -10,7 +10,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "lib": ["ESNext"],
-    "types": ["bun-types", "node"],
+    "types": ["node"],
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
