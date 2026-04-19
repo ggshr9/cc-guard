@@ -124,7 +124,14 @@ export function loadConfig(file: string): CcGuardConfig {
     cfg.network = { ...cfg.network, ...parsed.network } as CcGuardConfig['network']
   }
   if (isObject(parsed.privacy)) {
-    cfg.privacy = { ...cfg.privacy, ...parsed.privacy } as CcGuardConfig['privacy']
+    const validated: Partial<CcGuardConfig['privacy']> = {}
+    if (typeof parsed.privacy.anonymize_ip_in_logs === 'boolean') {
+      validated.anonymize_ip_in_logs = parsed.privacy.anonymize_ip_in_logs
+    }
+    if (typeof parsed.privacy.send_analytics === 'boolean') {
+      validated.send_analytics = parsed.privacy.send_analytics
+    }
+    cfg.privacy = { ...cfg.privacy, ...validated }
   }
   if (isObject(parsed.wrap)) {
     const u = parsed.wrap

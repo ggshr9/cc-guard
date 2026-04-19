@@ -11,11 +11,30 @@ export interface IpInfo {
   is_datacenter: boolean
 }
 
+/** Build a LookupEndpoint from a URL — auto-detects response format.
+ *  Tries JSON with an `ip` field first, falls back to plain-text IP
+ *  (trimmed, regex-checked). Works with ipinfo.io / api.ipify.org /
+ *  icanhazip.com / and user-provided Cloudflare Workers that return
+ *  either format. */
+export function buildEndpoint(url: string): LookupEndpoint {
+  return {
+    url,
+    parse: (body: string) => {
+      try {
+        const obj = JSON.parse(body)
+        if (obj && typeof obj.ip === 'string') return obj.ip
+      } catch { /* not JSON — fall through */ }
+      const s = body.trim()
+      return /^[0-9a-fA-F:.]+$/.test(s) ? s : null
+    },
+  }
+}
+
 export const DEFAULT_ENDPOINTS: LookupEndpoint[] = [
-  { url: 'https://ipinfo.io/json', parse: b => { try { return JSON.parse(b).ip ?? null } catch { return null } } },
-  { url: 'https://api.ipify.org?format=json', parse: b => { try { return JSON.parse(b).ip ?? null } catch { return null } } },
-  { url: 'https://icanhazip.com', parse: b => { const s = b.trim(); return /^\d+\.\d+\.\d+\.\d+$/.test(s) ? s : null } },
-]
+  'https://ipinfo.io/json',
+  'https://api.ipify.org?format=json',
+  'https://icanhazip.com',
+].map(buildEndpoint)
 
 /** Take an array of IPs returned from 2-3 endpoints, return the
  *  majority-consensus IP or null if no majority. */
