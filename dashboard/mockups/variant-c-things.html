@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cc-guard · Variant C · Things 3 soft cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --bg-warm: #F3EFE8;
+    --card: #FFFFFF;
+    --card-shadow: 0 1px 2px rgba(72, 63, 52, 0.04), 0 8px 24px -6px rgba(72, 63, 52, 0.08);
+    --card-shadow-hover: 0 2px 4px rgba(72, 63, 52, 0.06), 0 14px 36px -8px rgba(72, 63, 52, 0.14);
+    --fg: #2A241C;
+    --fg-secondary: #76695A;
+    --fg-tertiary: #A89B88;
+    --accent: #3A5BFF;
+    --ok: #3BAA6A;
+    --ok-soft: #E8F5EE;
+    --warn: #D97F2A;
+    --warn-soft: #FBEFDE;
+    --crit: #D84446;
+    --crit-soft: #FBE4E4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17140F;
+      --bg-warm: #1F1B14;
+      --card: #23201A;
+      --card-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -6px rgba(0,0,0,0.6);
+      --card-shadow-hover: 0 2px 4px rgba(0,0,0,0.45), 0 14px 36px -8px rgba(0,0,0,0.7);
+      --fg: #F2EDE3;
+      --fg-secondary: #BCB19E;
+      --fg-tertiary: #807566;
+      --accent: #667DFF;
+      --ok: #5EC188;
+      --ok-soft: rgba(94, 193, 136, 0.14);
+      --warn: #E89B55;
+      --warn-soft: rgba(232, 155, 85, 0.16);
+      --crit: #E87575;
+      --crit-soft: rgba(232, 117, 117, 0.16);
+    }
+  }
+
+  * { box-sizing: border-box; -webkit-font-smoothing: antialiased; margin: 0; padding: 0; }
+  html, body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--fg);
+    background: var(--bg);
+    letter-spacing: -0.003em;
+    min-height: 100vh;
+  }
+
+  .serif { font-family: "Newsreader", "New York", Georgia, serif; font-weight: 500; }
+
+  .app {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 32px 24px 140px;
+  }
+
+  /* ─── header ─── */
+  header {
+    margin-bottom: 28px;
+    padding: 4px 4px 0;
+  }
+  header .label {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--fg-tertiary);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  header h1 {
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    color: var(--fg);
+    margin-bottom: 2px;
+  }
+  header .sub {
+    font-size: 14px;
+    color: var(--fg-secondary);
+  }
+
+  /* ─── hero card ─── */
+  .hero {
+    background: var(--card);
+    border-radius: 22px;
+    padding: 32px 28px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -40%;
+    right: -20%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, var(--warn-soft) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+  }
+  .hero-icon {
+    width: 56px; height: 56px;
+    border-radius: 18px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .hero-text { flex: 1; }
+  .hero-text .big {
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--fg);
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+  .hero-text .sub {
+    font-size: 14px;
+    color: var(--fg-secondary);
+    line-height: 1.45;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 40px;
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px dashed color-mix(in srgb, var(--fg-tertiary) 28%, transparent);
+    position: relative;
+  }
+  .hero-meta .kv { display: flex; flex-direction: column; gap: 4px; }
+  .hero-meta .k {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-tertiary);
+    font-weight: 600;
+  }
+  .hero-meta .v {
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 18px;
+    color: var(--fg);
+    font-weight: 500;
+    font-feature-settings: "tnum";
+  }
+
+  /* ─── signal grid ─── */
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--fg-tertiary);
+    font-weight: 600;
+    margin: 28px 4px 14px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 18px 18px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
+    cursor: default;
+  }
+  .card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--card-shadow-hover);
+  }
+  .card .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .card .badge {
+    width: 30px; height: 30px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+  }
+  .card.ok .badge { background: var(--ok-soft); color: var(--ok); }
+  .card.warn .badge { background: var(--warn-soft); color: var(--warn); }
+  .card.crit .badge { background: var(--crit-soft); color: var(--crit); }
+
+  .card .pill {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+  .card.ok .pill { background: var(--ok-soft); color: var(--ok); }
+  .card.warn .pill { background: var(--warn-soft); color: var(--warn); }
+  .card.crit .pill { background: var(--crit-soft); color: var(--crit); }
+
+  .card .name {
+    font-size: 13px;
+    color: var(--fg-secondary);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .card .val {
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 22px;
+    color: var(--fg);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    font-feature-settings: "tnum";
+  }
+  .card .unit {
+    font-size: 12px;
+    color: var(--fg-tertiary);
+    margin-left: 4px;
+    font-family: -apple-system, sans-serif;
+    font-weight: 400;
+  }
+
+  /* ─── alerts ─── */
+  .alert-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .alert-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-top: 8px;
+  }
+  .alert-card.high .alert-dot { background: var(--crit); box-shadow: 0 0 0 3px var(--crit-soft); }
+  .alert-card.medium .alert-dot { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-soft); }
+  .alert-card .msg {
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--fg);
+    margin-bottom: 4px;
+    letter-spacing: -0.005em;
+  }
+  .alert-card .adv {
+    font-size: 13px;
+    color: var(--fg-secondary);
+    line-height: 1.5;
+  }
+  .alert-card .ts {
+    font-size: 12px;
+    color: var(--fg-tertiary);
+    font-feature-settings: "tnum";
+    padding-top: 3px;
+    white-space: nowrap;
+  }
+
+  /* ─── bottom tab bar ─── */
+  .tabbar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: color-mix(in srgb, var(--card) 92%, transparent);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border-radius: 28px;
+    padding: 6px;
+    box-shadow: 0 8px 32px rgba(42, 36, 28, 0.15), 0 2px 4px rgba(42, 36, 28, 0.08);
+    display: flex;
+    gap: 2px;
+  }
+  .tabbar .t {
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg-secondary);
+    border-radius: 22px;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .tabbar .t:hover { background: color-mix(in srgb, var(--fg-tertiary) 8%, transparent); }
+  .tabbar .t.active {
+    background: var(--fg);
+    color: var(--card);
+  }
+  .tabbar .t .glyph {
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .mockup-flag {
+    position: fixed;
+    top: 16px;
+    right: 20px;
+    font-size: 11px;
+    color: var(--fg-tertiary);
+    background: var(--card);
+    padding: 6px 12px;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+    font-family: ui-monospace, monospace;
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="label">Sunday · April 20</div>
+      <h1 class="serif">Good afternoon.</h1>
+      <div class="sub">Your Claude Code is being watched.</div>
+    </header>
+
+    <div class="hero">
+      <div class="hero-row">
+        <div class="hero-icon">⚠</div>
+        <div class="hero-text">
+          <div class="big">One alert needs your attention</div>
+          <div class="sub">IP stability on wlan0 has degraded — 3 changes in 12 minutes. Auto-recovery is expected once your network settles.</div>
+        </div>
+      </div>
+      <div class="hero-meta">
+        <div class="kv"><span class="k">Status</span><span class="v">Watching</span></div>
+        <div class="kv"><span class="k">Uptime</span><span class="v">7d 3h</span></div>
+        <div class="kv"><span class="k">Version</span><span class="v">0.2.0</span></div>
+      </div>
+    </div>
+
+    <div class="section-label">Signals</div>
+    <div class="grid">
+      <div class="card warn">
+        <div class="top">
+          <div class="badge">⇄</div>
+          <div class="pill">Warning</div>
+        </div>
+        <div class="name">IP stability</div>
+        <div class="val">3<span class="unit">changes · 30m</span></div>
+      </div>
+      <div class="card ok">
+        <div class="top">
+          <div class="badge">◎</div>
+          <div class="pill">Ok</div>
+        </div>
+        <div class="name">Concurrent sessions</div>
+        <div class="val">1<span class="unit">active</span></div>
+      </div>
+      <div class="card ok">
+        <div class="top">
+          <div class="badge">↑</div>
+          <div class="pill">Ok</div>
+        </div>
+        <div class="name">Telemetry rate</div>
+        <div class="val">12<span class="unit">/ min</span></div>
+      </div>
+      <div class="card ok">
+        <div class="top">
+          <div class="badge">∞</div>
+          <div class="pill">Ok</div>
+        </div>
+        <div class="name">Streaming stall</div>
+        <div class="val">0<span class="unit">in 24h</span></div>
+      </div>
+      <div class="card ok">
+        <div class="top">
+          <div class="badge">⇌</div>
+          <div class="pill">Ok</div>
+        </div>
+        <div class="name">cc-switch activity</div>
+        <div class="val">2h<span class="unit">ago</span></div>
+      </div>
+      <div class="card ok">
+        <div class="top">
+          <div class="badge">@</div>
+          <div class="pill">Ok</div>
+        </div>
+        <div class="name">DNS stability</div>
+        <div class="val">Clean<span class="unit">no leaks</span></div>
+      </div>
+    </div>
+
+    <div class="section-label">Recent alerts</div>
+
+    <div class="alert-card high">
+      <div class="alert-dot"></div>
+      <div>
+        <div class="msg">3 IP changes in 12 minutes on wlan0</div>
+        <div class="adv">Consider closing VPN clients or parallel routing tools. If you're commuting or tethering, this is expected and will settle.</div>
+      </div>
+      <div class="ts">14:32</div>
+    </div>
+
+    <div class="alert-card medium">
+      <div class="alert-dot"></div>
+      <div>
+        <div class="msg">DNS resolver drifted from 10.84.2.1 → 8.8.8.8</div>
+        <div class="adv">Check whether a VPN client took over the resolver. Your system resolver changed mid-session.</div>
+      </div>
+      <div class="ts">12:15</div>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <div class="t active"><span class="glyph">●</span> Overview</div>
+    <div class="t"><span class="glyph">⚠</span> Alerts</div>
+    <div class="t"><span class="glyph">≡</span> Events</div>
+    <div class="t"><span class="glyph">⚙</span></div>
+  </nav>
+
+  <div class="mockup-flag">Variant C · Things 3 soft cards</div>
+</body>
+</html>

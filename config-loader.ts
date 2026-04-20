@@ -40,6 +40,11 @@ export interface CcGuardConfig {
     auto_confirm_below: Severity
     timeout_seconds: number
   }
+  dashboard: {
+    enabled: boolean
+    port: number
+    host: string
+  }
 }
 
 export const DEFAULT_CONFIG: CcGuardConfig = {
@@ -79,6 +84,11 @@ export const DEFAULT_CONFIG: CcGuardConfig = {
   wrap: {
     auto_confirm_below: 'high',
     timeout_seconds: 10,
+  },
+  dashboard: {
+    enabled: true,
+    port: 3458,
+    host: '127.0.0.1',
   },
 }
 
@@ -150,6 +160,17 @@ export function loadConfig(file: string): CcGuardConfig {
       }
     }
     cfg.wrap = { ...cfg.wrap, ...u } as CcGuardConfig['wrap']
+  }
+
+  if (isObject(parsed.dashboard)) {
+    const u = parsed.dashboard
+    const validated: Partial<CcGuardConfig['dashboard']> = {}
+    if (typeof u.enabled === 'boolean') validated.enabled = u.enabled
+    if (typeof u.port === 'number' && Number.isFinite(u.port) && u.port > 0 && u.port < 65536) {
+      validated.port = Math.floor(u.port)
+    }
+    if (typeof u.host === 'string' && u.host.length > 0) validated.host = u.host
+    cfg.dashboard = { ...cfg.dashboard, ...validated }
   }
 
   return cfg

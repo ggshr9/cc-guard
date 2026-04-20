@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cc-guard</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="window" data-connected="false">
+    <!-- chrome / title bar -->
+    <div class="chrome">
+      <span class="tl r" aria-hidden="true"></span>
+      <span class="tl y" aria-hidden="true"></span>
+      <span class="tl g" aria-hidden="true"></span>
+      <span class="chrome-title">cc-guard</span>
+      <span class="live-pill" title="SSE connection status">
+        <span class="live-dot"></span><span class="live-text">connecting…</span>
+      </span>
+      <label class="search">
+        <input type="text" placeholder="Search events, alerts, config…" id="search-input">
+        <kbd>⌘F</kbd>
+      </label>
+    </div>
+
+    <!-- sidebar -->
+    <aside class="sidebar">
+      <div class="side-item active" data-tab="overview" role="button" tabindex="0">
+        <span class="side-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a6 6 0 1 1 12 0"/><path d="M8 9l3-3"/></svg>
+        </span>Overview
+      </div>
+      <div class="side-item" data-tab="alerts" role="button" tabindex="0">
+        <span class="side-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2L14 13H2L8 2z"/><path d="M8 6v3"/><circle cx="8" cy="11" r="0.5" fill="currentColor" stroke="none"/></svg>
+        </span>Alerts<span class="side-count" id="alerts-count">—</span>
+      </div>
+      <div class="side-item" data-tab="events" role="button" tabindex="0">
+        <span class="side-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 4h10M3 8h10M3 12h10"/></svg>
+        </span>Events
+      </div>
+      <div class="side-item" data-tab="settings" role="button" tabindex="0">
+        <span class="side-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2"/><path d="M8 1.5v2M8 12.5v2M14.5 8h-2M3.5 8h-2M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4M12.6 12.6l-1.4-1.4M4.8 4.8L3.4 3.4"/></svg>
+        </span>Settings
+      </div>
+
+      <div class="side-spacer"></div>
+      <a class="side-item sub" href="https://github.com/ggshr9/cc-guard" target="_blank" rel="noopener">
+        <span class="side-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5a6.5 6.5 0 0 0-2.05 12.67c.32.06.44-.14.44-.31 0-.15-.01-.66-.01-1.2-1.78.33-2.25-.44-2.39-.84-.08-.2-.43-.84-.73-1.01-.25-.13-.6-.46-.01-.47.56 0 .96.52 1.09.74.64 1.08 1.66.77 2.07.59.06-.46.25-.77.46-.95-1.58-.18-3.23-.79-3.23-3.51 0-.78.28-1.41.73-1.91-.07-.18-.32-.91.07-1.89 0 0 .6-.19 1.97.73A6.66 6.66 0 0 1 8 4.45c.62 0 1.25.08 1.83.24 1.37-.93 1.97-.73 1.97-.73.39.98.14 1.71.07 1.89.45.5.73 1.13.73 1.91 0 2.73-1.66 3.33-3.24 3.51.26.22.48.64.48 1.3 0 .94-.01 1.69-.01 1.92 0 .18.12.39.44.31A6.5 6.5 0 0 0 8 1.5z"/></svg>
+        </span>GitHub
+      </a>
+      <a class="side-item sub" href="https://github.com/ggshr9/cc-guard/blob/master/README.md" target="_blank" rel="noopener">
+        <span class="side-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h8l2 2v10H3z"/><path d="M5 6h6M5 9h6M5 12h4"/></svg>
+        </span>Documentation
+      </a>
+    </aside>
+
+    <!-- main content -->
+    <main class="main">
+
+      <!-- ───── Tab: Overview ───── -->
+      <section id="tab-overview" class="tab active">
+        <h1>Overview</h1>
+
+        <div class="group">
+          <div class="hero">
+            <div class="big-num" id="hero-num">—</div>
+            <div class="text">
+              <div class="title" id="hero-title">Loading</div>
+              <div class="sub" id="hero-sub">&nbsp;</div>
+            </div>
+            <div class="meta-row">
+              <div class="kv"><span class="k">Status</span><span class="v" id="hero-status">—</span></div>
+              <div class="kv"><span class="k">Uptime</span><span class="v" id="hero-uptime">—</span></div>
+              <div class="kv"><span class="k">Version</span><span class="v" id="hero-version">—</span></div>
+              <div class="kv"><span class="k">Host</span><span class="v" id="hero-host">localhost:3458</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-label">Signals</div>
+        <div class="group" id="signals-group">
+          <div class="row row-empty">Loading signals…</div>
+        </div>
+
+        <div class="section-label">Recent alerts</div>
+        <div class="group" id="overview-alerts">
+          <div class="alert-row row-empty">No alerts. Nice.</div>
+        </div>
+      </section>
+
+      <!-- ───── Tab: Alerts ───── -->
+      <section id="tab-alerts" class="tab">
+        <h1>Alerts</h1>
+
+        <div class="filter-bar">
+          <div class="chips" role="tablist">
+            <button class="chip active" data-filter="all">All</button>
+            <button class="chip" data-filter="high">High</button>
+            <button class="chip" data-filter="medium">Medium</button>
+            <button class="chip" data-filter="low">Low</button>
+            <button class="chip" data-filter="info">Info</button>
+          </div>
+          <span class="filter-count" id="alerts-filter-count">—</span>
+        </div>
+
+        <div class="group" id="alerts-group">
+          <div class="alert-row row-empty">Loading…</div>
+        </div>
+      </section>
+
+      <!-- ───── Tab: Events ───── -->
+      <section id="tab-events" class="tab">
+        <h1>Events</h1>
+
+        <div class="filter-bar">
+          <div class="chips" role="tablist" id="events-source-filter">
+            <button class="chip active" data-source="all">All sources</button>
+            <!-- populated dynamically -->
+          </div>
+          <span class="filter-count" id="events-filter-count">—</span>
+        </div>
+
+        <div class="group events-table" id="events-group">
+          <div class="events-header">
+            <span>Time</span>
+            <span>Source</span>
+            <span>Type</span>
+            <span>Summary</span>
+          </div>
+          <div id="events-rows">
+            <div class="event-row row-empty">Loading…</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───── Tab: Settings ───── -->
+      <section id="tab-settings" class="tab">
+        <h1>Settings</h1>
+
+        <div class="section-label">Alert backends</div>
+        <div class="group" id="backends-group">
+          <div class="row row-empty">Loading…</div>
+        </div>
+
+        <div class="section-label">Configuration</div>
+        <div class="group">
+          <div class="config-note">
+            <p>
+              Config lives at <code>~/.claude/channels/cc-guard/config.json</code> and is hot-reloaded when the file changes.
+              Edit it in your editor; the daemon will pick up changes within a second.
+            </p>
+          </div>
+          <pre class="config-dump" id="config-dump">Loading…</pre>
+        </div>
+
+        <div class="section-label">About</div>
+        <div class="group">
+          <div class="kv-row">
+            <span class="k">Version</span>
+            <span class="v" id="about-version">—</span>
+          </div>
+          <div class="kv-row">
+            <span class="k">State directory</span>
+            <span class="v"><code>~/.claude/channels/cc-guard/</code></span>
+          </div>
+          <div class="kv-row">
+            <span class="k">Daemon port</span>
+            <span class="v"><code id="about-port">—</code></span>
+          </div>
+          <div class="kv-row">
+            <span class="k">PID</span>
+            <span class="v"><code id="about-pid">—</code></span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- slide-over for event detail -->
+    <aside class="slide-over" id="slide-over" aria-hidden="true">
+      <div class="slide-over-chrome">
+        <span class="slide-over-title" id="slide-over-title">Event</span>
+        <button class="slide-over-close" id="slide-over-close" aria-label="Close">✕</button>
+      </div>
+      <div class="slide-over-body">
+        <div class="kv-row">
+          <span class="k">Time</span>
+          <span class="v" id="so-time">—</span>
+        </div>
+        <div class="kv-row">
+          <span class="k">Source</span>
+          <span class="v" id="so-source">—</span>
+        </div>
+        <div class="kv-row">
+          <span class="k">Type</span>
+          <span class="v" id="so-type">—</span>
+        </div>
+        <div class="section-label">Raw payload</div>
+        <pre class="json-dump" id="so-json">—</pre>
+      </div>
+    </aside>
+
+    <div class="slide-over-scrim" id="slide-over-scrim"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
