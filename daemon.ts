@@ -7,7 +7,7 @@ import {
 } from './config.ts'
 import { appendFileSync, truncateSync } from 'fs'
 import { RingBuffer } from './ring-buffer.ts'
-import { loadConfig } from './config-loader.ts'
+import { loadConfig, DEFAULT_CONFIG } from './config-loader.ts'
 import { evaluateRisk, buildAlert, severityForCount, severityForBool } from './rules.ts'
 import { scanConcurrentSessions } from './sources/session-sink.ts'
 import { diffAccountRelevant } from './sources/ccswitch-sink.ts'
@@ -63,9 +63,23 @@ function loadDatacenterAsns(): Set<string> {
   }
 }
 
+/** Ensure config.json exists so the hot-reload watcher has a target. Without
+ *  this, first-run users never get hot-reload wired (the `watch` call would
+ *  be skipped by the `existsSync` guard and never retried). */
+function ensureConfigFile(): void {
+  if (existsSync(CONFIG_FILE)) return
+  try {
+    writeFileSync(CONFIG_FILE, JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n', { mode: 0o600 })
+    process.stderr.write(`[cc-guard] wrote default config to ${CONFIG_FILE}\n`)
+  } catch (err) {
+    process.stderr.write(`[cc-guard] could not create ${CONFIG_FILE}: ${err instanceof Error ? err.message : String(err)}\n`)
+  }
+}
+
 export async function runDaemon(): Promise<void> {
   if (!existsSync(STATE_DIR)) mkdirSync(STATE_DIR, { recursive: true, mode: 0o700 })
   acquirePidLock()
+  ensureConfigFile()
 
   // One-shot latch for noisy file write warnings (unknown_events.log etc.)
   let unknownEventsWarned = false
@@ -343,15 +357,15 @@ export async function runDaemon(): Promise<void> {
   void checkDns()
 
   // ── Config hot-reload ───────────────────────────────────────────────────
-  if (existsSync(CONFIG_FILE)) {
-    watch(CONFIG_FILE, () => {
-      try {
-        cfg = loadConfig(CONFIG_FILE)
-        router = buildRouter()  // rebuild so backend configs are refreshed
-        process.stderr.write('[cc-guard] config reloaded\n')
-      } catch { /* keep prior cfg */ }
-    })
-  }
+  // ensureConfigFile() guarantees CONFIG_FILE exists at this point, so the
+  // watcher can be registered unconditionally.
+  watch(CONFIG_FILE, () => {
+    try {
+      cfg = loadConfig(CONFIG_FILE)
+      router = buildRouter()  // rebuild so backend configs are refreshed
+      process.stderr.write('[cc-guard] config reloaded\n')
+    } catch { /* keep prior cfg */ }
+  })
 
   // ── Periodic flush + heartbeat + 1h sanity tick ─────────────────────────
   const flushTimer = setInterval(() => { buffer.flush(); process.stderr.write('.') }, FLUSH_INTERVAL_MS)
