@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cc-guard dashboard — 3 style explorations</title>
+<style>
+  :root {
+    --bg: #0b0b10;
+    --fg: #f4f4f7;
+    --fg-dim: #9a9aa8;
+    --accent: #7B81E8;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #fafafa; --fg: #0e0e10; --fg-dim: #6b6b73; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100vh;
+    padding: 60px 32px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .lead { color: var(--fg-dim); margin-bottom: 48px; max-width: 720px; }
+  .lead code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; padding: 2px 5px; background: rgba(255,255,255,0.06); border-radius: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    display: block;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 24px;
+    transition: all 0.18s ease;
+    color: var(--fg);
+  }
+  @media (prefers-color-scheme: light) {
+    .card { background: #fff; border-color: rgba(0,0,0,0.07); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .card .tag {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .card h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.01em; }
+  .card p { font-size: 13px; color: var(--fg-dim); line-height: 1.55; margin-bottom: 18px; }
+  .card .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.06);
+    color: var(--fg-dim);
+  }
+  @media (prefers-color-scheme: light) {
+    .chip { background: rgba(0,0,0,0.05); }
+  }
+  .card .open {
+    font-size: 12px;
+    color: var(--accent);
+    margin-top: 18px;
+    font-family: ui-monospace, Menlo, monospace;
+  }
+  .card .open::after { content: " →"; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>cc-guard dashboard</h1>
+    <p class="lead">Three style explorations, same data. Click a variant to open it full-screen. All pages toggle dark/light via <code>prefers-color-scheme</code> — try <code>⌘/Ctrl + Shift + D</code> in DevTools.</p>
+    <div class="grid">
+      <a class="card" href="variant-a-system-prefs.html">
+        <div class="tag">VARIANT A</div>
+        <h2>System Settings vibrancy</h2>
+        <p>macOS Sonoma system settings. Translucent sidebar, grouped inset lists, SF icons, native bureaucratic feel. Best for "this feels like part of the OS."</p>
+        <div class="chips">
+          <span class="chip">sidebar</span>
+          <span class="chip">vibrancy</span>
+          <span class="chip">SF Pro</span>
+          <span class="chip">systemBlue</span>
+        </div>
+        <div class="open">open</div>
+      </a>
+      <a class="card" href="variant-b-linear.html">
+        <div class="tag">VARIANT B</div>
+        <h2>Linear minimalism</h2>
+        <p>Linear/Superhuman vibe. Top tabs, hairlines, mono numbers with sparklines, dense info, single purple accent. Best for "I want to trust this as an engineer tool."</p>
+        <div class="chips">
+          <span class="chip">top tabs</span>
+          <span class="chip">mono</span>
+          <span class="chip">sparklines</span>
+          <span class="chip">dense</span>
+        </div>
+        <div class="open">open</div>
+      </a>
+      <a class="card" href="variant-c-things.html">
+        <div class="tag">VARIANT C</div>
+        <h2>Things 3 soft cards</h2>
+        <p>Things 3 / iOS 17 consumer warmth. Serif display, floating rounded cards, pastel badges, bottom floating tab bar. Best for "I want it to feel approachable."</p>
+        <div class="chips">
+          <span class="chip">bottom tabs</span>
+          <span class="chip">serif display</span>
+          <span class="chip">pastel</span>
+          <span class="chip">warm bg</span>
+        </div>
+        <div class="open">open</div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

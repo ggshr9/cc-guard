@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cc-guard · Variant B · Linear minimalism</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #5E6AD2;
+    --accent-hover: #7278DD;
+    --bg: #FFFFFF;
+    --bg-elevated: #FAFAFA;
+    --bg-hover: #F4F4F5;
+    --fg: #0E0E10;
+    --fg-secondary: #6B6B73;
+    --fg-tertiary: #9A9AA2;
+    --divider: rgba(10, 10, 10, 0.06);
+    --border-strong: rgba(10, 10, 10, 0.09);
+    --ok: #4DBB5F;
+    --warn: #F2B93B;
+    --crit: #EB5757;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --accent: #7B81E8;
+      --accent-hover: #9095F0;
+      --bg: #08080A;
+      --bg-elevated: #121216;
+      --bg-hover: #1A1A1F;
+      --fg: #F4F4F6;
+      --fg-secondary: #9D9DA6;
+      --fg-tertiary: #6A6A73;
+      --divider: rgba(255,255,255,0.06);
+      --border-strong: rgba(255,255,255,0.10);
+      --ok: #5FC975;
+      --warn: #F2C04C;
+      --crit: #F06A6A;
+    }
+  }
+
+  * { box-sizing: border-box; -webkit-font-smoothing: antialiased; margin: 0; padding: 0; }
+  html, body {
+    font-family: "Geist", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--fg);
+    background: var(--bg);
+    letter-spacing: -0.006em;
+    min-height: 100vh;
+  }
+
+  .mono { font-family: "JetBrains Mono", "SF Mono", Menlo, monospace; font-feature-settings: "ss01", "cv01"; }
+
+  .app {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* ─── top nav ─── */
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--divider);
+    margin-bottom: 32px;
+  }
+  .nav .brand {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--fg);
+    letter-spacing: -0.02em;
+    padding: 6px 0;
+    margin-right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav .brand::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 18%, transparent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .nav .tabs { display: flex; gap: 2px; margin-right: auto; }
+  .nav .tab {
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--fg-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    font-weight: 500;
+  }
+  .nav .tab:hover { background: var(--bg-hover); color: var(--fg); }
+  .nav .tab.active {
+    color: var(--fg);
+    background: var(--bg-hover);
+  }
+
+  .nav .cmdk {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--fg-tertiary);
+    padding: 5px 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .nav .cmdk kbd {
+    font-family: inherit;
+    font-size: 10px;
+    padding: 1px 4px;
+    background: var(--bg-hover);
+    border-radius: 3px;
+  }
+
+  /* ─── status block ─── */
+  .status-block {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 48px;
+    align-items: baseline;
+    padding: 8px 0 32px;
+    border-bottom: 1px solid var(--divider);
+    margin-bottom: 32px;
+  }
+  .status-block .label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-tertiary);
+    margin-bottom: 8px;
+  }
+  .status-block .value {
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    color: var(--fg);
+  }
+  .status-block .value .accent { color: var(--warn); }
+  .status-block .sub {
+    font-size: 13px;
+    color: var(--fg-secondary);
+    margin-top: 4px;
+  }
+  .status-block .metric {
+    text-align: right;
+  }
+  .status-block .metric .num {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+  }
+
+  /* ─── section header ─── */
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: 40px 0 12px;
+    padding: 0 2px;
+  }
+  .section-head h2 {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-secondary);
+  }
+  .section-head .hint {
+    font-size: 12px;
+    color: var(--fg-tertiary);
+    font-family: "JetBrains Mono", monospace;
+  }
+
+  /* ─── signal table ─── */
+  .table {
+    display: flex;
+    flex-direction: column;
+  }
+  .tr {
+    display: grid;
+    grid-template-columns: 24ch 1fr auto 80px;
+    gap: 16px;
+    padding: 14px 2px;
+    border-bottom: 1px solid var(--divider);
+    align-items: center;
+    transition: background 0.1s ease;
+    cursor: default;
+  }
+  .tr:hover { background: linear-gradient(90deg, var(--bg-hover), transparent 70%); }
+  .tr .key {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    color: var(--fg);
+    font-weight: 500;
+  }
+  .tr .sparkline {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 18px;
+    opacity: 0.7;
+  }
+  .tr .sparkline span {
+    width: 3px;
+    background: var(--fg-tertiary);
+    border-radius: 1px;
+  }
+  .tr.warn .sparkline span:last-child { background: var(--warn); }
+  .tr .v {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--fg-secondary);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .tr .st {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-align: right;
+    text-transform: uppercase;
+  }
+  .tr .st.ok { color: var(--ok); }
+  .tr .st.warn { color: var(--warn); }
+  .tr .st.crit { color: var(--crit); }
+
+  /* ─── alerts ─── */
+  .alert {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 16px;
+    padding: 16px 2px;
+    border-bottom: 1px solid var(--divider);
+    align-items: flex-start;
+  }
+  .alert .ts {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--fg-tertiary);
+    padding-top: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .alert .msg {
+    font-size: 13px;
+    color: var(--fg);
+    margin-bottom: 3px;
+    font-weight: 500;
+  }
+  .alert .adv {
+    font-size: 12px;
+    color: var(--fg-secondary);
+    line-height: 1.5;
+  }
+  .alert .tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .alert .tag.high { background: color-mix(in srgb, var(--crit) 14%, transparent); color: var(--crit); }
+  .alert .tag.medium { background: color-mix(in srgb, var(--warn) 16%, transparent); color: #B47300; }
+  @media (prefers-color-scheme: dark) {
+    .alert .tag.medium { color: var(--warn); }
+  }
+
+  footer {
+    margin-top: 60px;
+    padding: 24px 0 40px;
+    border-top: 1px solid var(--divider);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--fg-tertiary);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .mockup-flag {
+    position: fixed;
+    bottom: 16px;
+    right: 20px;
+    font-size: 11px;
+    color: var(--fg-tertiary);
+    background: var(--bg-elevated);
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--divider);
+    font-family: "JetBrains Mono", monospace;
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <nav class="nav">
+      <div class="brand">cc-guard</div>
+      <div class="tabs">
+        <div class="tab active">Overview</div>
+        <div class="tab">Alerts · 2</div>
+        <div class="tab">Events</div>
+        <div class="tab">Settings</div>
+      </div>
+      <div class="cmdk">Search <kbd>⌘K</kbd></div>
+    </nav>
+
+    <section class="status-block">
+      <div>
+        <div class="label">Status</div>
+        <div class="value">Watching · <span class="accent">1 alert</span></div>
+        <div class="sub">IP stability degraded on wlan0 — auto-recovery expected</div>
+      </div>
+      <div class="metric">
+        <div class="label">Uptime</div>
+        <div class="num">7d 3h</div>
+      </div>
+      <div class="metric">
+        <div class="label">Version</div>
+        <div class="num">0.2.0</div>
+      </div>
+    </section>
+
+    <div class="section-head">
+      <h2>Signals</h2>
+      <span class="hint">last 30 min · auto-refresh 3s</span>
+    </div>
+
+    <div class="table">
+      <div class="tr warn">
+        <span class="key">ip_stability</span>
+        <div class="sparkline">
+          <span style="height: 30%"></span>
+          <span style="height: 50%"></span>
+          <span style="height: 40%"></span>
+          <span style="height: 60%"></span>
+          <span style="height: 90%"></span>
+          <span style="height: 100%"></span>
+          <span style="height: 80%"></span>
+          <span style="height: 100%"></span>
+        </div>
+        <span class="v">3 changes / 30m</span>
+        <span class="st warn">warn</span>
+      </div>
+      <div class="tr">
+        <span class="key">concurrent_sessions</span>
+        <div class="sparkline">
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+        </div>
+        <span class="v">1 active</span>
+        <span class="st ok">ok</span>
+      </div>
+      <div class="tr">
+        <span class="key">telemetry_rate</span>
+        <div class="sparkline">
+          <span style="height: 40%"></span>
+          <span style="height: 35%"></span>
+          <span style="height: 45%"></span>
+          <span style="height: 38%"></span>
+          <span style="height: 50%"></span>
+          <span style="height: 42%"></span>
+          <span style="height: 48%"></span>
+          <span style="height: 40%"></span>
+        </div>
+        <span class="v">12 / min</span>
+        <span class="st ok">ok</span>
+      </div>
+      <div class="tr">
+        <span class="key">streaming_stall</span>
+        <div class="sparkline">
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+        </div>
+        <span class="v">0 · 24h</span>
+        <span class="st ok">ok</span>
+      </div>
+      <div class="tr">
+        <span class="key">cc_switch_activity</span>
+        <div class="sparkline">
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+          <span style="height: 30%"></span>
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+          <span style="height: 10%"></span>
+        </div>
+        <span class="v">2h ago</span>
+        <span class="st ok">ok</span>
+      </div>
+      <div class="tr">
+        <span class="key">dns_stability</span>
+        <div class="sparkline">
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+          <span style="height: 20%"></span>
+        </div>
+        <span class="v">clean</span>
+        <span class="st ok">ok</span>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2>Recent alerts</h2>
+      <span class="hint">last 24h</span>
+    </div>
+
+    <div>
+      <div class="alert">
+        <span class="ts">14:32:07</span>
+        <div>
+          <div class="msg">3 IP changes in 12 minutes on wlan0</div>
+          <div class="adv">Consider closing VPN clients or parallel routing tools. If you're commuting or tethering, this is expected and will settle.</div>
+        </div>
+        <span class="tag high">HIGH</span>
+      </div>
+      <div class="alert">
+        <span class="ts">12:15:43</span>
+        <div>
+          <div class="msg">DNS resolver drifted from 10.84.2.1 → 8.8.8.8</div>
+          <div class="adv">Check whether a VPN client took over the resolver. Your system resolver changed mid-session.</div>
+        </div>
+        <span class="tag medium">MED</span>
+      </div>
+    </div>
+
+    <footer>
+      <span>cc-guard <span class="mono">v0.2.0</span></span>
+      <span>connected · <span class="mono">localhost:3458</span></span>
+    </footer>
+  </div>
+
+  <div class="mockup-flag">Variant B · Linear minimalism</div>
+</body>
+</html>
