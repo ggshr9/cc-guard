@@ -357,12 +357,16 @@ export async function runDaemon(): Promise<void> {
   void checkDns()
 
   // ── Config hot-reload ───────────────────────────────────────────────────
-  // ensureConfigFile() guarantees CONFIG_FILE exists at this point, so the
-  // watcher can be registered unconditionally.
-  watch(CONFIG_FILE, () => {
+  // Watch the parent dir (not the file directly) and filter by filename.
+  // fs.watch on a single file fails when the file's inode changes (rm +
+  // recreate, editor atomic-rename via temp file, etc.) — a very common
+  // user action for config edits. Watching the dir is inode-replacement
+  // safe and still triggers on create / modify / delete.
+  watch(STATE_DIR, (_event, filename) => {
+    if (filename !== 'config.json') return
     try {
       cfg = loadConfig(CONFIG_FILE)
-      router = buildRouter()  // rebuild so backend configs are refreshed
+      router = buildRouter()
       process.stderr.write('[cc-guard] config reloaded\n')
     } catch { /* keep prior cfg */ }
   })
