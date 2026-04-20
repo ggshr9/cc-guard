@@ -377,11 +377,13 @@ export async function runDaemon(): Promise<void> {
 
   // ── Graceful shutdown ───────────────────────────────────────────────────
   const shutdown = (): void => {
+    process.stderr.write('\n[cc-guard] shutdown: flushing state + cleaning up...\n')
     clearInterval(flushTimer)
     clearInterval(sanityTimer)
     net.stop()
     buffer.flush()
     try { unlinkSync(PID_FILE) } catch {}
+    process.stderr.write('[cc-guard] shutdown: done\n')
     process.exit(0)
   }
   process.on('SIGINT', shutdown)

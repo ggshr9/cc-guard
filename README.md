@@ -41,6 +41,8 @@ cc-guard run       # start the daemon (foreground)
 
 For persistence across reboots, wrap with systemd / tmux / nohup.
 
+> **When backgrounding (`cc-guard run > log 2>&1 &`):** the shell's `$!` gets the `bun link` shim pid, not the daemon itself. The real daemon pid is in `~/.claude/channels/cc-guard/daemon.pid`. Use `kill $(cat ~/.claude/channels/cc-guard/daemon.pid)` for clean SIGTERM.
+
 ## Usage
 
 ```bash
