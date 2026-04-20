@@ -1,6 +1,8 @@
 #!/usr/bin/env bun
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { spawn } from 'child_process'
+import { platform } from 'os'
 import {
   STATE_FILE, CONFIG_FILE, STATE_DIR, PID_FILE, ALERTS_LOG,
   CLAUDE_STATSIG_DIR,
@@ -28,6 +30,7 @@ async function main(): Promise<void> {
       const force = process.argv.includes('--force')
       process.exit(installSystemdUnit({ force }))
     }
+    case 'dashboard': return openDashboard()
     case 'help':
     case '--help':
     case '-h': return showHelp()
@@ -229,6 +232,7 @@ Commands:
   install-systemd-unit
                      Generate ~/.config/systemd/user/cc-guard.service
                      (Linux only; pass --force to overwrite)
+  dashboard          Open the running daemon's web dashboard in your browser
   help               Show this help
 
 Config: ${CONFIG_FILE}
@@ -236,6 +240,35 @@ State:  ${STATE_FILE}
 
 cc-guard only observes. It does not modify Claude Code or network config.
 `.trim())
+}
+
+function openDashboard(): void {
+  const cfg = loadConfig(CONFIG_FILE)
+  if (!cfg.dashboard.enabled) {
+    console.error('Dashboard is disabled in config (dashboard.enabled = false).')
+    console.error(`Edit ${CONFIG_FILE} to re-enable, then restart the daemon.`)
+    process.exit(1)
+  }
+
+  const info = daemonInfo()
+  if (!info.alive) {
+    console.error('Daemon not running. Start it first:  cc-guard run  (or via systemd)')
+    process.exit(1)
+  }
+
+  const url = `http://${cfg.dashboard.host === '0.0.0.0' ? 'localhost' : cfg.dashboard.host}:${cfg.dashboard.port}/`
+  console.log(`Opening ${url}`)
+
+  const plat = platform()
+  const opener = plat === 'darwin' ? 'open' : plat === 'win32' ? 'start' : 'xdg-open'
+  try {
+    const child = spawn(opener, [url], { stdio: 'ignore', detached: true })
+    child.unref()
+  } catch (err) {
+    console.error(`Could not launch browser (${err instanceof Error ? err.message : String(err)}).`)
+    console.error(`Open manually: ${url}`)
+    process.exit(1)
+  }
 }
 
 void main()

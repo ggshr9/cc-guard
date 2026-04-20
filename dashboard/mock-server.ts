@@ -265,9 +265,13 @@ function sseResponse(): Response {
     })
 }
 
+declare const Bun: {
+    serve(opts: { port: number; fetch: (req: Request) => Response | Promise<Response> }): { port: number }
+}
+
 const server = Bun.serve({
     port: PORT,
-    async fetch(req) {
+    async fetch(req: Request) {
         const url = new URL(req.url)
         const p = url.pathname
 

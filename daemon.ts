@@ -19,6 +19,7 @@ import { JsonLogBackend } from './alerts/json-log.ts'
 import { OsNotifyBackend } from './alerts/os-notify.ts'
 import { WebhookBackend } from './alerts/webhook.ts'
 import { WechatCcBackend } from './alerts/wechat-cc.ts'
+import { DashboardServer } from './dashboard-server.ts'
 import { NetworkSink } from './sources/network-sink.ts'
 import { lookupPublicIp, lookupIpInfo, classifyAsn, buildEndpoint, type IpInfo } from './sources/ip-sink.ts'
 import { spawn } from 'child_process'
@@ -89,13 +90,22 @@ export async function runDaemon(): Promise<void> {
   const buffer = new RingBuffer({ file: STATE_FILE, capacity: MAX_EVENTS, retentionMs: RETENTION_MS })
   buffer.load()
 
+  // Dashboard server is started lazily below after cfg is known to be stable.
+  // It's kept in a `let` so hot-reload can swap it if the port changes.
+  let dashboard: DashboardServer | null = null
+
   const buildRouter = (): AlertRouter => new AlertRouter([
     new StderrBackend(cfg.alerts.stderr),
     new JsonLogBackend(cfg.alerts.json_log, ALERTS_LOG, cfg.privacy.anonymize_ip_in_logs),
     new OsNotifyBackend(cfg.alerts.os_notify),
     new WebhookBackend(cfg.alerts.webhook),
     new WechatCcBackend(cfg.alerts.wechat_cc),
-  ])
+  ], {
+    // Tee every dispatched alert (post-dedup) to the dashboard. Null check
+    // is defensive — dashboard is started before any event source wires up,
+    // but disabled-via-config is a legitimate state.
+    onDispatch: (alert) => { dashboard?.pushAlert(alert) },
+  })
   let router = buildRouter()
 
   /** Emit an event, push to buffer, evaluate risk, dispatch alert if warranted.
@@ -105,6 +115,7 @@ export async function runDaemon(): Promise<void> {
    *  noise escalation to trigger. */
   const emit = (event: Event): void => {
     buffer.push(event)
+    dashboard?.pushEvent(event)
     if (event.severity === 'medium' || event.severity === 'high') {
       const alert = buildAlert(event, buffer.query(event.signal, HOUR_MS))
       void router.dispatch(alert)
@@ -375,12 +386,45 @@ export async function runDaemon(): Promise<void> {
   const flushTimer = setInterval(() => { buffer.flush(); process.stderr.write('.') }, FLUSH_INTERVAL_MS)
   const sanityTimer = setInterval(() => { void checkDns() }, cfg.network.sanity_check_hours * HOUR_MS)
 
+  // ── Dashboard HTTP + SSE server ─────────────────────────────────────────
+  // Lazy import of package version. Fail-soft — if package.json isn't
+  // readable we serve '0.0.0' rather than refuse to boot.
+  if (cfg.dashboard.enabled) {
+    let version = '0.0.0'
+    try {
+      const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version?: string }
+      version = pkg.version ?? version
+    } catch {}
+    dashboard = new DashboardServer({
+      port: cfg.dashboard.port,
+      host: cfg.dashboard.host,
+      version,
+      getConfig: () => cfg,
+      buffer,
+      getEnabledBackends: () => ({
+        stderr:    { enabled: cfg.alerts.stderr.enabled,    min_level: cfg.alerts.stderr.min_level, extra: null },
+        os_notify: { enabled: cfg.alerts.os_notify.enabled, min_level: cfg.alerts.os_notify.min_level, extra: null },
+        json_log:  { enabled: cfg.alerts.json_log.enabled,  min_level: cfg.alerts.json_log.min_level, extra: ALERTS_LOG },
+        webhook:   { enabled: cfg.alerts.webhook.enabled,   min_level: cfg.alerts.webhook.min_level, extra: cfg.alerts.webhook.url || null },
+        wechat_cc: { enabled: cfg.alerts.wechat_cc.enabled, min_level: cfg.alerts.wechat_cc.min_level, extra: cfg.alerts.wechat_cc.chat_id || null },
+      }),
+    })
+    try {
+      dashboard.start()
+      process.stderr.write(`[cc-guard] dashboard http://${cfg.dashboard.host}:${cfg.dashboard.port}/\n`)
+    } catch (err) {
+      process.stderr.write(`[cc-guard] dashboard failed to start: ${err instanceof Error ? err.message : String(err)}\n`)
+      dashboard = null
+    }
+  }
+
   // ── Graceful shutdown ───────────────────────────────────────────────────
   const shutdown = (): void => {
     process.stderr.write('\n[cc-guard] shutdown: flushing state + cleaning up...\n')
     clearInterval(flushTimer)
     clearInterval(sanityTimer)
     net.stop()
+    dashboard?.stop()
     buffer.flush()
     try { unlinkSync(PID_FILE) } catch {}
     process.stderr.write('[cc-guard] shutdown: done\n')
